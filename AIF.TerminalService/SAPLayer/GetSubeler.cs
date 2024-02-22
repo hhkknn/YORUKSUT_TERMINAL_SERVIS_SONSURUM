@@ -1,0 +1,67 @@
+﻿using AIF.TerminalService.DatabaseLayer;
+using AIF.TerminalService.Models;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using System.Linq;
+using System.Web;
+
+namespace AIF.TerminalService.SAPLayer
+{
+    public class GetSubeler
+    {
+        public Response getSubeler(string dbName, string kullaniciId, string mKod)
+        {
+            DataTable dt = new DataTable();
+            try
+            {
+                GetConnectionString n = new GetConnectionString();
+                string connstring = n.getConnectionString(dbName, mKod);
+
+                if (connstring != "")
+                {
+                    string query = "";
+                    query = "select T1.\"U_SubeKodu\",T1.\"U_SubeAdi\" from \"@AIF_WMS_BTN\" T0 ";
+                    query += "INNER JOIN \"@AIF_WMS_BTN1\" T1 ON T0.DocEntry = T1.DocEntry ";
+                    query += "WHERE T0.\"U_UserCode\" = '" + kullaniciId + "'  and ISNULL(\"U_TayinEdildi\",'')='Y'";
+
+                    try
+                    {
+                        using (SqlConnection con = new SqlConnection(connstring))
+                        {
+                            using (SqlCommand cmd = new SqlCommand(query, con))
+                            {
+                                cmd.CommandType = CommandType.Text;
+                                using (SqlDataAdapter sda = new SqlDataAdapter(cmd))
+                                {
+                                    using (dt = new DataTable())
+                                    {
+                                        sda.Fill(dt);
+                                        dt.TableName = "Subeler";
+
+                                        if (dt.Rows.Count == 0)
+                                        {
+                                            return new Response { _list = null, Val = -333, Desc = "ŞUBE BULUNAMADI." };
+                                        }
+                                    }
+
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        return new Response { _list = null, Val = -9999, Desc = "BİLİNMEYEN HATA OLUŞTU." + ex.Message };
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return new Response { _list = null, Val = -9998, Desc = "BİLİNMEYEN HATA OLUŞTU." + ex.Message };
+            }
+            return new Response { _list = dt, Val = 0 };
+        }
+
+    }
+}
